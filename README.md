@@ -26,7 +26,3 @@ python run.py --data-path binarized_mnist.npz -q 500 -n 10 -s 10
 ```
 
 which gives a much better test loss of `83.08`.
-
-## TODO
-* GPU
-* Condtion
