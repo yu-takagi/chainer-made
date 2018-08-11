@@ -1,7 +1,7 @@
 # MADE implemented with Chainer
 Implemenation of [MADE: Masked Autoencoder for Distribution Estimation](https://arxiv.org/abs/1502.03509) with [Chainer](https://chainer.org/). This repository's aim is to adapt [A. Karpathy's MADE codes](https://github.com/karpathy/pytorch-made) from PyTorch to chainer. I newly implemented sampling function.
 
-This is the [blog post (only in Japanese)](http://tk-g.hatenablog.jp/) about this repository.
+This is the [blog post (only in Japanese)](http://tk-g.hatenablog.jp/entry/2018/08/10/000000) about this repository.
 
 You can also find the author's original code [here](https://github.com/mgermain/MADE).
 
