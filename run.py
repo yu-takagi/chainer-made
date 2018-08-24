@@ -56,21 +56,20 @@ def run_epoch(split, upto=None, gpu=None):
             opt.update()
 
     print("%s epoch average loss: %f" % (split, np.mean(lossfs)))
-    xbhat_exp = F.exp(xbhat)
-    xbhat_exp_invsig = F.log(xbhat_exp/(1-xbhat_exp))
 
 # ------------------------------------------------------------------------------
-
 def run_gen(nb_samples=5,seed=0,gpu=None):
     print("generate %d samples" % nb_samples)
     samples = model.gen(nb_samples=nb_samples,seed=seed,gpu=gpu)
     return samples
 
+# ------------------------------------------------------------------------------
 def binary_cross_entropy_with_logits(x, t):
     max_val = F.clip(-x,x_min=0.,x_max=np.inf)
     loss = x - x * t + max_val + F.log(F.exp(-max_val) + F.exp(-x - max_val))
     return F.sum(loss)
 
+# ------------------------------------------------------------------------------
 def plot(x,name):
     print("plotting...")
     width = x.shape[0]
@@ -84,7 +83,7 @@ def plot(x,name):
 
     plt.savefig(name+'.png')
 
-
+# ------------------------------------------------------------------------------
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--data-path', required=True, type=str, help="Path to binarized_mnist.npz")
