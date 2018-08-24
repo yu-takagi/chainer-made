@@ -19,11 +19,9 @@ class MaskedLinear(L.Linear):
 
     def __init__(self, in_features, out_features, bias=True):
         super(MaskedLinear, self).__init__(in_size=in_features, out_size=out_features)
+        self.add_persistent("mask", np.zeros((in_features,out_features)))
 
     def set_mask(self, mask, gpu):
-        mask = mask.T.astype(np.uint8)
-        if gpu is not None:
-            mask = cuda.to_gpu(mask)
         self.mask = mask
 
     def __call__(self, x):
@@ -45,32 +43,32 @@ class MADE(chainer.Chain):
         gpu: GPU ID (None indicates CPU)
         """
         super(MADE, self).__init__()
-        with self.init_scope():
-            self.nin = nin
-            self.nout = nout
-            self.hidden_sizes = hidden_sizes
-            assert self.nout % self.nin == 0, "nout must be integer multiple of nin"
-            self.gpu = gpu
+        self.nin = nin
+        self.nout = nout
+        self.hidden_sizes = hidden_sizes
+        assert self.nout % self.nin == 0, "nout must be integer multiple of nin"
+        self.gpu = gpu
+        # define a simple MLP neural net
+        net = []
+        hs = [nin] + hidden_sizes + [nout]
+        for h0,h1 in zip(hs, hs[1:]):
+            net.extend([
+                    MaskedLinear(h0, h1),
+                    F.relu,
+                ])
+        net.pop() # pop the last ReLU for the output layer
 
-            # define a simple MLP neural net
-            net = []
-            hs = [nin] + hidden_sizes + [nout]
-            for h0,h1 in zip(hs, hs[1:]):
-                net.extend([
-                        MaskedLinear(h0, h1),
-                        F.relu,
-                    ])
-            net.pop() # pop the last ReLU for the output layer
+        with self.init_scope():
             self.net = chainer.Sequential(*net)
 
-            # seeds for orders/connectivities of the model ensemble
-            self.natural_ordering = natural_ordering
-            self.num_masks = num_masks
-            self.seed = 0 # for cycling through num_masks orderings
-            self.m = {}
-            self.update_masks() # builds the initial self.m connectivity
-            # note, we could also precompute the masks and cache them, but this
-            # could get memory expensive for large number of masks.
+        # seeds for orders/connectivities of the model ensemble
+        self.natural_ordering = natural_ordering
+        self.num_masks = num_masks
+        self.seed = 0 # for cycling through num_masks orderings
+        self.m = {}
+        self.update_masks() # builds the initial self.m connectivity
+        # note, we could also precompute the masks and cache them, but this
+        # could get memory expensive for large number of masks.
 
     def update_masks(self):
         if self.m and self.num_masks == 1: return # only a single seed, skip for efficiency
@@ -99,6 +97,9 @@ class MADE(chainer.Chain):
         # set the masks in all MaskedLinear layers
         layers = [l for l in self.net if isinstance(l, MaskedLinear)]
         for l,m in zip(layers, masks):
+            m = m.T.astype(np.uint8)
+            if self.gpu is not None:
+                m = cuda.to_gpu(m)
             l.set_mask(m,self.gpu)
 
     def forward(self, x):
